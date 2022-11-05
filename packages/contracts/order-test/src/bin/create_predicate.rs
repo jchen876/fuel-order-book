@@ -2,10 +2,9 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
+// use fuels::{tx::Address};
 
-fn main() {
-
-let walter = "goofy";
+fn create_predicate(SPENDING_SCRIPT_HASH:u64, MIN_GAS:u64, OUTPUT_COIN_INDEX:u8, MAKER_ADDRESS:u64, MAKER_AMOUNT:u64, TAKER_AMOUNT:u64, SALT: u8, MAKER_TOKEN:u64, TAKER_TOKEN:u64, MSG_SENDER: u64) {
 let template =
     format!("predicate;
     use std::{{
@@ -19,22 +18,22 @@ let template =
     
     // update this with the script for spending
     const SPENDING_SCRIPT_HASH = {};
-    // const MIN_GAS = 1_200_000;
+    // const MIN_GAS = {};
     // the constants that define each predicate. I would rather pass these as arguments, but i dont know how 
-    const OUTPUT_COIN_INDEX = 0u8;
+    const OUTPUT_COIN_INDEX = {};
     fn main(take_coin: b256, min_take_amount: u64, maker: b256) -> bool {{
         // parameterize this thing
         let order = LimitOrder {{
-            maker: Address::from(0xb1c6067c6663708d831ef3d10edf0aa4d6c14f077fc7f41f5535a30435e7cd78),
-            maker_amount: 1_000_000_000,
-            taker_amount: 500_000_000,
-            maker_token: 0x0000000000000000000000000000000000000000000000000000000000000000,
-            taker_token: 0x0000000000000000000000000000000000000000000000000000000000000000,
-            salt: 43,
+            maker: Address::from({}),
+            maker_amount: {},
+            taker_amount: {},
+            maker_token: {},
+            taker_token: {},
+            salt: {},
         }};
     
         // handle cancellations
-        // let msg_sender = 
+        let msg_sender = {}
         ////////////
         // INPUTS //
         ////////////
@@ -125,7 +124,7 @@ let template =
         __gtf::<b256>(index, GTF_OUTPUT_COIN_TO)
     }}
     
-", walter);
+", SPENDING_SCRIPT_HASH, MIN_GAS, OUTPUT_COIN_INDEX, MAKER_ADDRESS, MAKER_AMOUNT, TAKER_AMOUNT, SALT, MAKER_TOKEN, TAKER_TOKEN, MSG_SENDER);
 
     let path = Path::new("predicate.sw");
     let display = path.display();
@@ -141,4 +140,9 @@ let template =
         Err(why) => panic!("couldn't write to {}: {}", display, why),
         Ok(_) => println!("successfully wrote to {}", display),
     }
+}
+
+fn main(){
+    let x : (u64, u8) = (112312, 23);
+    create_predicate(u64::from(x.0), u64::from(x.0), u8::from(x.1), u64::from(x.0), u64::from(x.0), u64::from(x.0), u8::from(x.1), u64::from(x.0), u64::from(x.0), u64::from(x.0));
 }
