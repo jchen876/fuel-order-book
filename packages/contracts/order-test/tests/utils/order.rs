@@ -1,11 +1,14 @@
 use crate::utils::builder::LimitOrder;
 use crate::utils::environment as env;
+use crate::utils::pred;
+
 use fuels::{
     contract::predicate::Predicate,
     prelude::{Bech32Address, Provider, TxParameters},
     signers::WalletUnlocked,
     tx::{Address, AssetId, Contract, Input, TxPointer, UtxoId},
 };
+
 const PREDICATE: &str = "../order-predicate/out/debug/order-predicate.bin";
 /// Gets the message to contract predicate
 pub fn get_predicate() -> (Vec<u8>, Address) {
@@ -13,11 +16,14 @@ pub fn get_predicate() -> (Vec<u8>, Address) {
     let predicate_root = Address::from(*Contract::root_from_code(&predicate_bytecode));
     (predicate_bytecode, predicate_root)
 }
+
 pub async fn create_order(
     maker: &WalletUnlocked,
     order: &LimitOrder,
     provider: &Provider,
 ) -> (Predicate, Input) {
+    pred.create_predicate();
+    pred.compile_to_bytes();
     let predicate = Predicate::load_from(PREDICATE).unwrap();
     let (predicate_bytecode, predicate_root) = get_predicate();
     // create the order (fund the predicate)

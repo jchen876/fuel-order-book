@@ -54,7 +54,7 @@ fn main(take_coin: b256, min_take_amount: u64, maker: b256) -> bool {
 }
 
 ////////////
-// Inuput //
+// Input //
 ////////////
 const GTF_INPUT_COIN_AMOUNT = 0x105;
 const GTF_INPUT_COIN_ASSET_ID = 0x106;

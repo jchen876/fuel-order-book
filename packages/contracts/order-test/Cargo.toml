@@ -6,9 +6,15 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
+anyhow = "1.0.66"
+forc-pkg = "0.30.1"
+forc-tracing = "0.30.1"
 fuel-core-interfaces = "0.10.1"
 fuels = { version = "0.24", features = ["fuel-core-lib"] }
+gag = "1.0.0"
+regex = "1.7.0"
 tokio = { version = "1.12", features = ["rt", "macros"] }
+tracing = "0.1.37"
 
 [[test]]
 harness = true

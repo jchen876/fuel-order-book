@@ -1,10 +1,80 @@
 
 use std::fs::File;
-use std::io::prelude::*;
+//use std::io::prelude::*;
 use std::path::Path;
+
+use anyhow::Result;
+use forc_pkg::BuiltPackage;
+use forc_pkg::PackageManifestFile;
+use regex::{Captures , Regex};
+use std::{fmt::Write, io::Read, path::PathBuf};
 // use fuels::{tx::Address};
 
-fn create_predicate(SPENDING_SCRIPT_HASH:u64, MIN_GAS:u64, OUTPUT_COIN_INDEX:u8, MAKER_ADDRESS:u64, MAKER_AMOUNT:u64, TAKER_AMOUNT:u64, SALT: u8, MAKER_TOKEN:u64, TAKER_TOKEN:u64, MSG_SENDER: u64) {
+pub fn compile_to_bytes(
+    file_name: &str,
+    capture_output: bool,
+) -> (Result<BuiltPackage>, String) {
+    tracing::info!(" Compiling {}", file_name);
+
+    let mut buf_stdout: Option<gag::BufferRedirect> = None;
+    let mut buf_stderr: Option<gag::BufferRedirect> = None;
+    if capture_output {
+        // Capture both stdout and stderr to buffers, compile the test and save to a string.
+        buf_stdout = Some(gag::BufferRedirect::stdout().unwrap());
+        buf_stderr = Some(gag::BufferRedirect::stderr().unwrap());
+    }
+
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let path = format!(
+        "{}/src/e2e_vm_tests/test_programs/{}",
+        manifest_dir, file_name
+    );
+    let manifest = PackageManifestFile::from_dir(&PathBuf::from(path)).unwrap();
+    let result = forc_pkg::build_package_with_options(
+        &manifest,
+        forc_pkg::BuildOpts {
+            pkg: forc_pkg::PkgOpts {
+                path: Some(format!(
+                    "{}/src/e2e_vm_tests/test_programs/{}",
+                    manifest_dir, file_name
+                )),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+    );
+
+    let mut output = String::new();
+    if capture_output {
+        let mut buf_stdout = buf_stdout.unwrap();
+        let mut buf_stderr = buf_stderr.unwrap();
+        buf_stdout.read_to_string(&mut output).unwrap();
+        buf_stderr.read_to_string(&mut output).unwrap();
+        drop(buf_stdout);
+        drop(buf_stderr);
+
+        // Capture the result of the compilation (i.e., any errors Forc produces) and append to
+        // the stdout from the compiler.
+        if let Err(ref e) = result {
+            write!(output, "\n{}", e).expect("error writing output");
+        }
+
+        if cfg!(windows) {
+            // In windows output error and warning path files start with \\?\
+            // We replace \ by / so tests can check unix paths only
+            let regex = Regex::new(r"\\\\?\\(.*)").unwrap();
+            output = regex
+                .replace_all(output.as_str(), |caps: &Captures| {
+                    caps[1].replace('\\', "/")
+                })
+                .to_string();
+        }
+    }
+
+    (result, output)
+}
+
+pub fn create_predicate(SPENDING_SCRIPT_HASH:u64, MIN_GAS:u64, OUTPUT_COIN_INDEX:u8, MAKER_ADDRESS:u64, MAKER_AMOUNT:u64, TAKER_AMOUNT:u64, SALT: u8, MAKER_TOKEN:u64, TAKER_TOKEN:u64, MSG_SENDER: u64) {
 let template =
     format!("predicate;
     use std::{{
@@ -126,7 +196,7 @@ let template =
     
 ", SPENDING_SCRIPT_HASH, MIN_GAS, OUTPUT_COIN_INDEX, MAKER_ADDRESS, MAKER_AMOUNT, TAKER_AMOUNT, SALT, MAKER_TOKEN, TAKER_TOKEN, MSG_SENDER);
 
-    let path = Path::new("predicate.sw");
+    let path = Path::new("order-predicate.sw");
     let display = path.display();
 
     // Open a file in write-only mode, returns `io::Result<File>`
@@ -135,14 +205,9 @@ let template =
         Ok(file) => file,
     };
 
-    // Write the `LOREM_IPSUM` string to `file`, returns `io::Result<()>`
+    // Write the template params to `file`, returns `io::Result<()>`
     match file.write_all(template.as_bytes()) {
         Err(why) => panic!("couldn't write to {}: {}", display, why),
         Ok(_) => println!("successfully wrote to {}", display),
     }
-}
-
-fn main(){
-    let x : (u64, u8) = (112312, 23);
-    create_predicate(u64::from(x.0), u64::from(x.0), u8::from(x.1), u64::from(x.0), u64::from(x.0), u64::from(x.0), u8::from(x.1), u64::from(x.0), u64::from(x.0), u64::from(x.0));
 }
